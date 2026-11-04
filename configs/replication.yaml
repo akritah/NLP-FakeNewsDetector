@@ -1,0 +1,44 @@
+dataset:
+  csv_path: data/raw/fakeddit_verified.csv
+  image_column: image_url
+  image_dir: data/raw/images/
+  label_column: label
+  label_mapping:
+    '0': 0
+    '1': 1
+  max_seq_length: 128
+  smoke_test_size: 100
+  test_split: 0.15
+  text_column: title
+  train_split: 0.7
+  val_split: 0.15
+evaluation:
+  metrics:
+  - accuracy
+  - f1_macro
+  - precision
+  - recall
+model:
+  dropout: 0.1
+  emotion_encoder:
+    checkpoint: distilbert-base-uncased
+    freeze: true
+  fusion_method: concat
+  hidden_dim: 256
+  image_encoder:
+    checkpoint: google/vit-base-patch16-224
+    freeze: true
+  text_encoder:
+    checkpoint: roberta-base
+    freeze: true
+    pooling: cls
+  vae_latent_dim: 128
+training:
+  batch_size: 32
+  early_stopping_patience: 3
+  epochs: 10
+  gradient_clip: 1.0
+  learning_rate: 2.0e-05
+  mixed_precision: true
+  seed: 42
+  weight_decay: 0.01

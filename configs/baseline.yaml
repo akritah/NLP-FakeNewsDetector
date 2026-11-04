@@ -1,0 +1,42 @@
+# Baseline Configuration
+
+dataset:
+  csv_path: "data/raw/fakeddit_verified.csv"
+  image_dir: "data/raw/images/"
+  split_dir: "data/splits"
+  text_column: "title" # or "text"
+  image_column: "image_url" # mapping to local path
+  label_column: "label"
+  label_mapping:
+    "0": 0 # REAL
+    "1": 1 # FAKE
+  max_seq_length: 128
+  smoke_test_size: 100
+  train_split: 0.7
+  val_split: 0.15
+  test_split: 0.15
+
+model:
+  text_encoder:
+    checkpoint: "roberta-base"
+    freeze: true
+    pooling: "cls" # Options: cls, mean
+  image_encoder:
+    checkpoint: "google/vit-base-patch16-224"
+    freeze: true
+  fusion_method: "concat" # Options: concat, cross_attention
+  hidden_dim: 256
+  dropout: 0.1
+
+training:
+  batch_size: 32
+  learning_rate: 0.00002
+  epochs: 10
+  weight_decay: 0.01
+  gradient_clip: 1.0
+  early_stopping_patience: 3
+  mixed_precision: true
+  seed: 42
+
+evaluation:
+  metrics: ["accuracy", "f1_macro", "precision", "recall"]
