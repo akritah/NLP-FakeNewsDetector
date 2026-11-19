@@ -25,11 +25,9 @@ class EmotionFeatureExtractor(nn.Module):
             for param in self.distilbert.parameters():
                 param.requires_grad = False
 
-        # NRC Lexicon loading
-        # The NRC lexicon typically maps words to 8 emotions:
-        # anger, anticipation, disgust, fear, joy, sadness, surprise, trust
-        self.emotion_lexicon = self._load_nrc_lexicon(nrc_lexicon_path)
         self.emotion_labels = ["anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust"]
+        # NRC Lexicon loading
+        self.emotion_lexicon = self._load_nrc_lexicon(nrc_lexicon_path)
 
     def _load_nrc_lexicon(self, path: str) -> Dict[str, List[float]]:
         """
@@ -38,15 +36,24 @@ class EmotionFeatureExtractor(nn.Module):
         """
         lexicon = {}
         if path and os.path.exists(path):
-            # Implementation for loading the actual TSV/CSV NRC file
-            # Typically: word \t anger \t anticipation ...
+            label_index = {label: index for index, label in enumerate(self.emotion_labels)}
             with open(path, 'r', encoding='utf-8') as f:
                 for line in f:
                     parts = line.strip().split('\t')
-                    if len(parts) >= 9:
+                    if len(parts) == 3:
+                        word, emotion, flag = parts
+                        if emotion in label_index and flag == "1":
+                            scores = lexicon.setdefault(
+                                word.lower(), [0.0] * len(self.emotion_labels)
+                            )
+                            scores[label_index[emotion]] = 1.0
+                    elif len(parts) >= 9:
                         word = parts[0].lower()
-                        scores = [float(x) if x != '?' else 0.0 for x in parts[1:]]
-                        lexicon[word] = scores
+                        raw_scores = parts[1:1 + len(self.emotion_labels)]
+                        lexicon[word] = [
+                            float(value) if value != '?' else 0.0
+                            for value in raw_scores
+                        ]
         return lexicon
 
     def extract_lexical_emotions(self, text: str) -> torch.Tensor:

@@ -3,6 +3,7 @@ dataset:
   image_column: image_url
   image_dir: data/raw/images/
   label_column: label
+  split_dir: data/splits
   label_mapping:
     '0': 0
     '1': 1

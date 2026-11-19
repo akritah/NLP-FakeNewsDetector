@@ -8,6 +8,7 @@ import pandas as pd
 from src.data.dataset import FakedditDataset
 from src.models.replication_model import ReplicationModel
 from src.utils.metrics import compute_metrics
+from src.utils.checkpointing import load_checkpoint
 
 def run_final_evaluation(config_path, checkpoint_path, csv_path, image_dir):
     with open(config_path, 'r') as f:
@@ -39,7 +40,7 @@ def run_final_evaluation(config_path, checkpoint_path, csv_path, image_dir):
 
     loader = DataLoader(dataset, batch_size=32)
     model = ReplicationModel(config).to(device)
-    model.load_state_dict(torch.load(checkpoint_path))
+    load_checkpoint(checkpoint_path, model)
     model.eval()
 
     all_labels, all_preds, all_probs = [], [], []

@@ -119,27 +119,39 @@ def run_replication_training(config_path: str):
             data['raw_text'] = str(row[self.text_col])
             return data, label
 
-    full_dataset = ReplicationDataset(
-        csv_path=config['dataset']['csv_path'],
-        image_dir=config['dataset']['image_dir'],
-        text_col=config['dataset']['text_column'],
-        image_col=config['dataset']['image_column'],
-        label_col=config['dataset']['label_column'],
-        label_mapping=config['dataset']['label_mapping'],
-        tokenizer=tokenizer,
-        image_processor=processor,
-        max_length=config['dataset']['max_seq_length'],
-        subset_size=config['dataset'].get('smoke_test_size')
-    )
+    dataset_kwargs = {
+        "image_dir": config['dataset']['image_dir'],
+        "text_col": config['dataset']['text_column'],
+        "image_col": config['dataset']['image_column'],
+        "label_col": config['dataset']['label_column'],
+        "label_mapping": config['dataset']['label_mapping'],
+        "tokenizer": tokenizer,
+        "image_processor": processor,
+        "max_length": config['dataset']['max_seq_length'],
+    }
+    split_dir = config['dataset'].get("split_dir")
+    split_paths = {
+        name: os.path.join(split_dir, f"{name}.csv")
+        for name in ("train", "val", "test")
+    } if split_dir else {}
 
-    train_size = int(config['dataset']['train_split'] * len(full_dataset))
-    val_size = int(config['dataset']['val_split'] * len(full_dataset))
-    test_size = len(full_dataset) - train_size - val_size
-
-    train_ds, val_ds, test_ds = random_split(
-        full_dataset, [train_size, val_size, test_size],
-        generator=torch.Generator().manual_seed(config['training']['seed'])
-    )
+    if split_paths and all(os.path.isfile(path) for path in split_paths.values()):
+        train_ds = ReplicationDataset(csv_path=split_paths["train"], **dataset_kwargs)
+        val_ds = ReplicationDataset(csv_path=split_paths["val"], **dataset_kwargs)
+        test_ds = ReplicationDataset(csv_path=split_paths["test"], **dataset_kwargs)
+    else:
+        full_dataset = ReplicationDataset(
+            csv_path=config['dataset']['csv_path'],
+            subset_size=config['dataset'].get('smoke_test_size'),
+            **dataset_kwargs
+        )
+        train_size = int(config['dataset']['train_split'] * len(full_dataset))
+        val_size = int(config['dataset']['val_split'] * len(full_dataset))
+        test_size = len(full_dataset) - train_size - val_size
+        train_ds, val_ds, test_ds = random_split(
+            full_dataset, [train_size, val_size, test_size],
+            generator=torch.Generator().manual_seed(config['training']['seed'])
+        )
 
     train_loader = DataLoader(train_ds, batch_size=config['training']['batch_size'], shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=config['training']['batch_size'])

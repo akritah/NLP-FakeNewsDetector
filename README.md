@@ -212,6 +212,31 @@ The result directory contains per-variant:
 - Cached encoder features
 - Final comparison CSV and Markdown table
 
+## Proposed VLM research extension
+
+The original classifier remains independent from the proposed
+vision-language-model track. The optional extension accepts a claim and image,
+produces visual observations, and keeps the following outputs separate:
+
+- REAL/FAKE classifier prediction and confidence.
+- Claim-image consistency: `consistent`, `inconsistent`, `unrelated`, or
+  `uncertain`.
+- Optional externally retrieved evidence.
+- Structured explanation and uncertainty reasons.
+
+The lazy BLIP adapter is in
+[vlm_analyzer.py](src/models/proposed/vlm_analyzer.py). It requires a
+downloadable BLIP checkpoint at runtime; it does not claim factual verification
+from a caption or similarity score. The consistency, evidence, integration,
+explanation, and counterfactual interfaces are in
+[src/models/proposed/](src/models/proposed/).
+
+Use [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) and
+[docs/EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md) for the separation
+between the replication baseline and the proposed research experiments.
+The repository audit and known limitations are recorded in
+[docs/REPOSITORY_AUDIT.md](docs/REPOSITORY_AUDIT.md).
+
 ## Validation
 
 Run the architecture and VAE tests:
@@ -239,3 +264,35 @@ The test suite verifies encoder dimensions, ViT patch extraction, fusion dimensi
 - [Replication training](src/training/train_replication.py)
 - [Evaluation](src/training/evaluate.py)
 - [Metrics](src/utils/metrics.py)
+
+## Controlled research upgrade
+
+Separate experiment configurations and a fixed-split runner are available under:
+
+- [configs/experiments/](configs/experiments/)
+- [src/experiments/run_experiment.py](src/experiments/run_experiment.py)
+- [RESEARCH_UPGRADE_ROADMAP.md](docs/RESEARCH_UPGRADE_ROADMAP.md)
+- [EXPERIMENT_PROTOCOL.md](docs/EXPERIMENT_PROTOCOL.md)
+
+Audit fixed-split integrity:
+
+```powershell
+$env:PYTHONPATH="C:\FakeNewsDetector"
+python src\data\audit_splits.py --split-dir data\splits
+```
+
+Run a controlled ViT cross-attention experiment:
+
+```powershell
+python src\experiments\run_experiment.py --config configs\experiments\cross_attention_vit.yaml
+```
+
+The runner reuses audited train/validation/test CSVs, selects checkpoints by
+validation macro-F1, and writes metrics, parameter counts, timing, confusion
+matrix, and model metadata under `outputs/research/<experiment>/`.
+
+Aggregate one or more executed seeds:
+
+```powershell
+python src\experiments\aggregate_results.py --root outputs\research --output outputs\research\comparison.csv
+```
