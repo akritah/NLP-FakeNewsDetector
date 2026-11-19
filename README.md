@@ -296,3 +296,19 @@ Aggregate one or more executed seeds:
 ```powershell
 python src\experiments\aggregate_results.py --root outputs\research --output outputs\research\comparison.csv
 ```
+
+## Standalone Kaggle/Colab research notebooks
+
+The minimal independent notebooks are in
+[notebooks/research/](notebooks/research/):
+
+1. [01_main_model_experiments.ipynb](notebooks/research/01_main_model_experiments.ipynb)
+2. [02_cross_modal_and_ablation_experiments.ipynb](notebooks/research/02_cross_modal_and_ablation_experiments.ipynb)
+3. [03_counterfactual_evaluation.ipynb](notebooks/research/03_counterfactual_evaluation.ipynb)
+4. [04_vlm_analysis.ipynb](notebooks/research/04_vlm_analysis.ipynb)
+
+Each notebook detects Kaggle/Colab paths, installs dependencies, supports a
+smoke-test mode, and writes outputs under the platform working directory. The
+first notebook runs the main architectures; the second runs emotion and
+consistency ablations; the third requires an executed checkpoint for model
+intervention scores; and the fourth optionally downloads BLIP weights.

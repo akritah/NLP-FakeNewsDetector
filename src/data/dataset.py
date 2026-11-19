@@ -103,5 +103,6 @@ class FakedditDataset(Dataset):
         return {
             "text": text_inputs,
             "image": image_inputs,
+            "raw_text": text,
             "id": row.name # Preserve stable identifier
         }, label

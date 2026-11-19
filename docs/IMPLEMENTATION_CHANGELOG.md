@@ -9,6 +9,14 @@
   multi-seed result aggregation.
 - Added explicit result reporting in `docs/RESULTS.md`.
 
+## 2026-11-19
+
+- Connected raw text to the shared research dataset batches.
+- Added executable emotion and learned cross-modal consistency ablations.
+- Added CLIP consistency scoring and image/text counterfactual builders.
+- Added four independent Kaggle/Colab notebooks under
+  `notebooks/research/`.
+
 ## 2026-11-18
 
 - Added the initial repository audit.

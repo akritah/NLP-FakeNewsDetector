@@ -43,7 +43,7 @@ def train_epoch(model, loader, optimizer, criterion, device, scaler):
         optimizer.zero_grad(set_to_none=True)
 
         with torch.amp.autocast("cuda", enabled=scaler is not None):
-            logits = model(text_inputs, image_inputs)
+            logits = model(text_inputs, image_inputs, batch.get("raw_text"))
             loss = criterion(logits, batch_labels)
 
         if scaler:
@@ -81,7 +81,7 @@ def evaluate(model, loader, criterion, device):
             key: value.to(device) for key, value in batch["image"].items()
         }
         batch_labels = batch_labels.to(device)
-        logits = model(text_inputs, image_inputs)
+        logits = model(text_inputs, image_inputs, batch.get("raw_text"))
         loss = criterion(logits, batch_labels)
         loss_total += float(loss.detach().cpu())
         probabilities.extend(
@@ -135,6 +135,12 @@ def run(config_path: str):
         "max_length": config["dataset"]["max_seq_length"],
     }
     split_dir = config["dataset"]["split_dir"]
+    smoke_size = (
+        int(config["experiment"]["smoke_size"])
+        if config["experiment"].get("smoke_test", False)
+        else None
+    )
+    dataset_kwargs["subset_size"] = smoke_size
     train_ds = FakedditDataset(
         csv_path=os.path.join(split_dir, "train.csv"), **dataset_kwargs
     )

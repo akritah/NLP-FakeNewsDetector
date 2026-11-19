@@ -7,6 +7,7 @@ from .fusion import MultimodalFusion
 from .image_encoder import ImageEncoder
 from .clip_encoder import CLIPImageEncoder
 from .text_encoder import TextEncoder
+from .emotion_features import EmotionFeatureExtractor
 
 
 class ResearchMultimodalModel(nn.Module):
@@ -49,6 +50,17 @@ class ResearchMultimodalModel(nn.Module):
         self.configured_consistency = model_config.get(
             "cross_modal_consistency", False
         )
+        self.use_emotion = model_config.get("emotion_features", False)
+        emotion_dim = 0
+        if self.use_emotion:
+            emotion_config = model_config.get("emotion_encoder", {})
+            self.emotion_encoder = EmotionFeatureExtractor(
+                checkpoint=emotion_config.get(
+                    "checkpoint", "distilbert-base-uncased"
+                ),
+                freeze=emotion_config.get("freeze", True),
+            )
+            emotion_dim = 776
         consistency_dim = 1 if self.configured_consistency else 0
         if self.configured_consistency:
             self.text_consistency_projection = nn.Linear(text_dim, shared_dim)
@@ -74,7 +86,12 @@ class ResearchMultimodalModel(nn.Module):
         else:
             raise ValueError(f"Unsupported fusion_method: {self.fusion_method}")
 
-        input_dim += consistency_dim
+        input_dim += consistency_dim + emotion_dim
+        self.emotion_projection = (
+            nn.Linear(emotion_dim, shared_dim) if self.use_emotion else None
+        )
+        if self.use_emotion:
+            input_dim = input_dim - emotion_dim + shared_dim
         self.classifier = MLPClassifier(
             input_dim=input_dim,
             num_classes=len(config["dataset"]["label_mapping"]),
@@ -82,7 +99,7 @@ class ResearchMultimodalModel(nn.Module):
             dropout=model_config.get("dropout", 0.1),
         )
 
-    def forward(self, text_inputs, image_inputs):
+    def forward(self, text_inputs, image_inputs, raw_text_batch=None):
         input_ids = text_inputs["input_ids"]
         attention_mask = text_inputs["attention_mask"]
         pixel_values = image_inputs["pixel_values"]
@@ -130,5 +147,20 @@ class ResearchMultimodalModel(nn.Module):
             )
             similarity = (text_vector * visual_vector).sum(dim=-1, keepdim=True)
             fused_features = torch.cat([fused_features, similarity], dim=-1)
+
+        if self.use_emotion:
+            if raw_text_batch is None:
+                raise ValueError(
+                    "raw_text_batch is required when emotion_features is enabled."
+                )
+            emotion_features = self.emotion_encoder(
+                input_ids,
+                attention_mask,
+                list(raw_text_batch),
+            )
+            fused_features = torch.cat(
+                [fused_features, self.emotion_projection(emotion_features)],
+                dim=-1,
+            )
 
         return self.classifier(fused_features)

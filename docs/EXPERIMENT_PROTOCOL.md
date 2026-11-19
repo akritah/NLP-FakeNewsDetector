@@ -40,3 +40,8 @@ mismatched, semantically similar, or contradictory image. Keep the original
 label for every condition. Report accuracy, confidence change, and prediction
 change rate by condition. A swapped image is an intervention, not a relabeling
 operation.
+
+The executable implementation is in `src/experiments/counterfactual.py`. It
+supports random, same-label, opposite-label, and ablated images, plus masked
+or clause-removed text interventions. The intervention label remains the
+original sample label in every condition.

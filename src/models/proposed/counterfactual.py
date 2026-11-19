@@ -58,6 +58,11 @@ def summarize_counterfactuals(records: Sequence[CounterfactualRecord]) -> Dict[s
             and record.predicted_label != original[record.sample_id].predicted_label
             for record in condition_records
         )
+        confidence_deltas = [
+            record.confidence - original[record.sample_id].confidence
+            for record in condition_records
+            if record.sample_id in original
+        ]
         summary[condition] = {
             "count": len(condition_records),
             "accuracy": correct / len(condition_records) if condition_records else None,
@@ -65,6 +70,10 @@ def summarize_counterfactuals(records: Sequence[CounterfactualRecord]) -> Dict[s
             "mean_confidence": (
                 sum(record.confidence for record in condition_records) / len(condition_records)
                 if condition_records else None
+            ),
+            "mean_confidence_delta": (
+                sum(confidence_deltas) / len(confidence_deltas)
+                if confidence_deltas else None
             ),
         }
     return summary
